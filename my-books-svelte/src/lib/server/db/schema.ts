@@ -69,6 +69,10 @@ export const readingGoals = pgTable('reading_goals', {
 	year: integer('year').notNull(),
 	targetBooks: integer('target_books').notNull(),
 	currentBooks: integer('current_books').default(0),
+	targetPages: integer('target_pages'),
+	currentPages: integer('current_pages').default(0),
+	description: text('description'), // Optional description like "Leer más clásicos"
+	isActive: integer('is_active').default(1), // 1 = active, 0 = inactive
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });

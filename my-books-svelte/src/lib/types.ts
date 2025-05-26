@@ -105,8 +105,31 @@ export interface ReadingGoal {
 	year: number;
 	targetBooks: number;
 	currentBooks: number;
+	targetPages?: number;
+	currentPages: number;
+	description?: string;
+	isActive: number;
 	createdAt?: Date;
 	updatedAt?: Date;
+}
+
+export interface ReadingGoalFormData {
+	year: number;
+	targetBooks: number;
+	targetPages?: number;
+	description?: string;
+}
+
+export interface ReadingGoalProgress {
+	goal: ReadingGoal;
+	booksProgress: number; // percentage
+	pagesProgress: number; // percentage
+	booksRemaining: number;
+	pagesRemaining: number;
+	averageBooksPerMonth: number;
+	averagePagesPerMonth: number;
+	isOnTrack: boolean;
+	daysRemaining: number;
 }
 
 // Google Books API types

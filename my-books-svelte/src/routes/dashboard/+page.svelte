@@ -6,6 +6,7 @@
 	$: user = data.user;
 	$: stats = data.stats;
 	$: recentBooks = data.recentBooks;
+	$: goalProgress = data.goalProgress;
 </script>
 
 <svelte:head>
@@ -99,6 +100,86 @@
 			</a>
 		</div>
 	</div>
+
+	<!-- Reading Goal Progress -->
+	{#if goalProgress}
+		<div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-6">
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-lg font-semibold text-green-900">🎯 Meta de Lectura {new Date().getFullYear()}</h2>
+				<a href="/goals" class="text-green-600 hover:text-green-500 text-sm font-medium">
+					Ver detalles →
+				</a>
+			</div>
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<!-- Books Progress -->
+				<div>
+					<div class="flex items-center justify-between mb-2">
+						<span class="text-sm font-medium text-green-700">Progreso de Libros</span>
+						<span class="text-sm text-green-600">{goalProgress.booksProgress.toFixed(1)}%</span>
+					</div>
+					<div class="w-full bg-green-200 rounded-full h-3">
+						<div 
+							class="bg-green-500 h-3 rounded-full transition-all duration-500"
+							style="width: {Math.min(100, goalProgress.booksProgress)}%"
+						></div>
+					</div>
+					<div class="flex justify-between mt-2 text-sm text-green-700">
+						<span>{goalProgress.currentBooks} leídos</span>
+						<span>{goalProgress.targetBooks} objetivo</span>
+					</div>
+				</div>
+
+				<!-- Pages Progress (if target is set) -->
+				{#if goalProgress.targetPages}
+					<div>
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-sm font-medium text-green-700">Progreso de Páginas</span>
+							<span class="text-sm text-green-600">{goalProgress.pagesProgress.toFixed(1)}%</span>
+						</div>
+						<div class="w-full bg-green-200 rounded-full h-3">
+							<div 
+								class="bg-green-500 h-3 rounded-full transition-all duration-500"
+								style="width: {Math.min(100, goalProgress.pagesProgress)}%"
+							></div>
+						</div>
+						<div class="flex justify-between mt-2 text-sm text-green-700">
+							<span>{goalProgress.currentPages.toLocaleString()} leídas</span>
+							<span>{goalProgress.targetPages.toLocaleString()} objetivo</span>
+						</div>
+					</div>
+				{:else}
+					<div class="flex items-center justify-center">
+						<div class="text-center">
+							<div class="text-3xl mb-2">📈</div>
+							<p class="text-sm text-green-700">
+								¡Vas por buen camino!<br>
+								Sigue leyendo para alcanzar tu meta.
+							</p>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{:else}
+		<!-- No Goal CTA -->
+		<div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200 p-6">
+			<div class="flex items-center justify-between">
+				<div>
+					<h2 class="text-lg font-semibold text-yellow-900">🎯 Establece una Meta de Lectura</h2>
+					<p class="text-yellow-800 mt-1">
+						Define objetivos para mantenerte motivado durante {new Date().getFullYear()}
+					</p>
+				</div>
+				<a 
+					href="/goals"
+					class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+				>
+					Crear Meta
+				</a>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Recent Books -->
 	{#if recentBooks.length > 0}

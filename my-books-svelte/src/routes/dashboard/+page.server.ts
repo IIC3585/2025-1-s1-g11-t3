@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { userBooks, books } from '$lib/server/db/schema';
-import { eq, and, count, avg, sum } from 'drizzle-orm';
+import { userBooks, books, readingGoals } from '$lib/server/db/schema';
+import { eq, and, count, avg, sum, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -61,6 +61,53 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 		const totalPages = totalPagesResult.reduce((sum, book) => sum + (book.pages || 0), 0);
 
+		// Get current year reading goal
+		const currentYear = new Date().getFullYear();
+		const [currentGoal] = await db
+			.select()
+			.from(readingGoals)
+			.where(and(
+				eq(readingGoals.userId, locals.user.id),
+				eq(readingGoals.year, currentYear),
+				eq(readingGoals.isActive, 1)
+			));
+
+		// Calculate goal progress if goal exists
+		let goalProgress = null;
+		if (currentGoal) {
+			// Get books read this year
+			const [booksThisYear] = await db
+				.select({ count: count() })
+				.from(userBooks)
+				.where(and(
+					eq(userBooks.userId, locals.user.id),
+					eq(userBooks.status, 'read'),
+					sql`extract(year from ${userBooks.finishDate}) = ${currentYear}`
+				));
+
+			// Get pages read this year
+			const pagesThisYearResult = await db
+				.select({ pages: books.pages })
+				.from(userBooks)
+				.innerJoin(books, eq(userBooks.bookId, books.id))
+				.where(and(
+					eq(userBooks.userId, locals.user.id),
+					eq(userBooks.status, 'read'),
+					sql`extract(year from ${userBooks.finishDate}) = ${currentYear}`
+				));
+
+			const pagesThisYear = pagesThisYearResult.reduce((sum, book) => sum + (book.pages || 0), 0);
+
+			goalProgress = {
+				targetBooks: currentGoal.targetBooks,
+				currentBooks: booksThisYear.count,
+				targetPages: currentGoal.targetPages,
+				currentPages: pagesThisYear,
+				booksProgress: Math.min(100, (booksThisYear.count / currentGoal.targetBooks) * 100),
+				pagesProgress: currentGoal.targetPages ? Math.min(100, (pagesThisYear / currentGoal.targetPages) * 100) : 0
+			};
+		}
+
 		// Get recent books (last 5)
 		const recentBooks = await db
 			.select({
@@ -94,7 +141,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		return {
 			user: locals.user,
 			stats,
-			recentBooks
+			recentBooks,
+			goalProgress
 		};
 
 	} catch (error) {
@@ -109,7 +157,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 				averageRating: 0,
 				totalPages: 0
 			},
-			recentBooks: []
+			recentBooks: [],
+			goalProgress: null
 		};
 	}
 }; 

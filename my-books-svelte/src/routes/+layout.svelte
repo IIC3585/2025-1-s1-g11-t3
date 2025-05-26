@@ -13,6 +13,7 @@
 		{ href: '/dashboard', label: 'Dashboard', icon: '📊' },
 		{ href: '/books', label: 'Mi Biblioteca', icon: '📚' },
 		{ href: '/search', label: 'Buscar Libros', icon: '🔍' },
+		{ href: '/goals', label: 'Metas', icon: '🎯' },
 		{ href: '/stats', label: 'Estadísticas', icon: '📈' }
 	];
 
