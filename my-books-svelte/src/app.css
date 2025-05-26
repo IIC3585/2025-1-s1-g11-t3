@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+/* Custom styles for MyBooks */
+.search-container {
+	position: relative;
+}
+
+/* Custom scrollbar for search results */
+.search-container .overflow-y-auto::-webkit-scrollbar {
+	width: 6px;
+}
+
+.search-container .overflow-y-auto::-webkit-scrollbar-track {
+	background: #f1f1f1;
+	border-radius: 3px;
+}
+
+.search-container .overflow-y-auto::-webkit-scrollbar-thumb {
+	background: #c1c1c1;
+	border-radius: 3px;
+}
+
+.search-container .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+	background: #a8a8a8;
+}
+
+/* Book card hover effects */
+.book-card {
+	transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.book-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading animation */
+@keyframes pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+.animate-pulse {
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom focus styles */
+.focus-ring:focus {
+	outline: 2px solid transparent;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* Smooth transitions */
+* {
+	transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
+}
