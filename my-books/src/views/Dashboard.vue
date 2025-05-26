@@ -16,6 +16,7 @@ const isLoading = ref({
   bestsellers: false,
   trending: false
 })
+const error = ref(null)
 
 const stats = computed(() => ({
   read: store.getReadingListByStatus('read').length,
@@ -25,11 +26,20 @@ const stats = computed(() => ({
 }))
 
 const showBookDetails = (book) => {
+  console.log('Opening book details for:', {
+    bookId: book.id,
+    bookTitle: book.title
+  })
   selectedBook.value = book
   showBookDetail.value = true
+  console.log('Modal state after opening:', {
+    selectedBook: selectedBook.value?.id,
+    showBookDetail: showBookDetail.value
+  })
 }
 
 const closeBookDetails = () => {
+  console.log('Closing book details')
   showBookDetail.value = false
   selectedBook.value = null
 }
@@ -42,6 +52,7 @@ const loadRecommendations = async () => {
   isLoading.value.popular = true
   isLoading.value.bestsellers = true
   isLoading.value.trending = true
+  error.value = null
 
   try {
     const [popular, best, trending] = await Promise.all([
@@ -50,16 +61,28 @@ const loadRecommendations = async () => {
       bookService.getTrendingBooks()
     ])
 
+    // Verificar si tenemos libros de NY Times
+    const hasNYTBooks = [...popular, ...best, ...trending].some(book => book.source === 'NYT')
+    if (!hasNYTBooks) {
+      console.warn('No se encontraron libros de NY Times. Verifica la API key.')
+    }
+
     popularBooks.value = popular
     bestsellers.value = best
     trendingBooks.value = trending
   } catch (error) {
     console.error('Error loading recommendations:', error)
+    error.value = 'Error al cargar las recomendaciones. Verifica la conexión y la API key de NY Times.'
   } finally {
     isLoading.value.popular = false
     isLoading.value.bestsellers = false
     isLoading.value.trending = false
   }
+}
+
+// Función para obtener la calificación del usuario para un libro
+const getUserRating = (bookId) => {
+  return store.getUserRating(bookId)
 }
 
 onMounted(() => {
@@ -70,6 +93,9 @@ onMounted(() => {
 
 <template>
   <div class="dashboard">
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
     <h2>Resumen de Lectura</h2>
     
     <div class="stats-container">
@@ -121,9 +147,18 @@ onMounted(() => {
           <div class="book-info">
             <h4>{{ book.title }}</h4>
             <p class="authors">{{ book.authors.join(', ') }}</p>
-            <div class="book-rating" v-if="book.averageRating">
-              <span class="stars">★</span>
-              {{ book.averageRating.toFixed(1) }}
+            <div class="book-rating" v-if="book.averageRating || getUserRating(book.id)">
+              <div class="rating-group">
+                <span v-if="book.averageRating" class="rating-item">
+                  <span class="stars">★</span>
+                  {{ book.averageRating.toFixed(1) }}
+                  <span class="ratings-count">({{ book.ratingsCount }} reseñas)</span>
+                </span>
+                <span v-if="getUserRating(book.id)" class="rating-item user-rating">
+                  <span class="stars">★</span>
+                  Tu calificación: {{ getUserRating(book.id) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -152,14 +187,27 @@ onMounted(() => {
             <div class="book-status">
               <span v-if="store.isFavorite(book.id)" class="status-favorite" title="En favoritos">★</span>
               <span v-if="store.isInReadingList(book.id)" class="status-reading" title="En lista de lectura">✓</span>
+              <span v-if="book.source === 'NYT'" class="status-source" title="Fuente: NY Times">NYT</span>
             </div>
           </div>
           <div class="book-info">
             <h4>{{ book.title }}</h4>
             <p class="authors">{{ book.authors.join(', ') }}</p>
-            <div class="book-rating" v-if="book.averageRating">
-              <span class="stars">★</span>
-              {{ book.averageRating.toFixed(1) }}
+            <div class="book-rating" v-if="book.averageRating || getUserRating(book.id)">
+              <div class="rating-group">
+                <span v-if="book.averageRating" class="rating-item">
+                  <span class="stars">★</span>
+                  {{ book.averageRating.toFixed(1) }}
+                  <span class="ratings-count">({{ book.ratingsCount }} reseñas)</span>
+                </span>
+                <span v-if="getUserRating(book.id)" class="rating-item user-rating">
+                  <span class="stars">★</span>
+                  Tu calificación: {{ getUserRating(book.id) }}
+                </span>
+              </div>
+            </div>
+            <div v-if="book.weeksOnList" class="weeks-on-list">
+              {{ book.weeksOnList }} semanas en lista
             </div>
           </div>
         </div>
@@ -193,9 +241,18 @@ onMounted(() => {
           <div class="book-info">
             <h4>{{ book.title }}</h4>
             <p class="authors">{{ book.authors.join(', ') }}</p>
-            <div class="book-rating" v-if="book.averageRating">
-              <span class="stars">★</span>
-              {{ book.averageRating.toFixed(1) }}
+            <div class="book-rating" v-if="book.averageRating || getUserRating(book.id)">
+              <div class="rating-group">
+                <span v-if="book.averageRating" class="rating-item">
+                  <span class="stars">★</span>
+                  {{ book.averageRating.toFixed(1) }}
+                  <span class="ratings-count">({{ book.ratingsCount }} reseñas)</span>
+                </span>
+                <span v-if="getUserRating(book.id)" class="rating-item user-rating">
+                  <span class="stars">★</span>
+                  Tu calificación: {{ getUserRating(book.id) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -538,6 +595,68 @@ h2 {
 
   .loading-placeholder {
     padding: 1rem;
+  }
+}
+
+.status-source {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #2c3e50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.weeks-on-list {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c00;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.rating-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rating-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.user-rating {
+  color: #42b883;
+  font-weight: 500;
+}
+
+.ratings-count {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 480px) {
+  .rating-group {
+    gap: 0.2rem;
+  }
+
+  .rating-item {
+    font-size: 0.8rem;
+  }
+
+  .ratings-count {
+    font-size: 0.7rem;
   }
 }
 </style> 

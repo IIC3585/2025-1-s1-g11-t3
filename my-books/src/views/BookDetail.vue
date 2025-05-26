@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useBookStore } from '../stores/bookStore'
 import { bookService } from '../services/bookService'
 
@@ -18,8 +18,28 @@ const emit = defineEmits(['close'])
 
 const store = useBookStore()
 
+// Agregar logs para depuración
+console.log('BookDetail mounted with props:', {
+  show: props.show,
+  bookId: props.book?.id,
+  bookTitle: props.book?.title
+})
+
+// Observar cambios en la prop show
+watch(() => props.show, (newValue) => {
+  console.log('BookDetail show prop changed:', newValue)
+})
+
 const isFavorite = computed(() => store.isFavorite(props.book.id))
 const isInReadingList = computed(() => store.isInReadingList(props.book.id))
+const userRating = computed(() => store.getUserRating(props.book.id))
+const bookStatus = computed(() => {
+  const bookInList = store.readingList.find(book => book.id === props.book.id)
+  return bookInList?.status || null
+})
+const canRateBook = computed(() => {
+  return bookStatus.value === 'inProgress' || bookStatus.value === 'read'
+})
 
 const toggleFavorite = () => {
   if (isFavorite.value) {
@@ -35,6 +55,10 @@ const toggleReadingList = () => {
   } else {
     store.addToReadingList(props.book)
   }
+}
+
+const rateBook = (rating) => {
+  store.rateBook(props.book.id, rating)
 }
 
 const closeModal = () => {
@@ -62,10 +86,37 @@ const closeModal = () => {
           <h2>{{ book.title }}</h2>
           <p class="authors">{{ book.authors.join(', ') }}</p>
 
-          <div class="book-rating" v-if="book.averageRating">
-            <span class="stars">★</span>
-            {{ book.averageRating.toFixed(1) }}
-            <span class="ratings-count">({{ book.ratingsCount }} reseñas)</span>
+          <div class="rating-section" v-if="canRateBook">
+            <div class="book-rating" v-if="book.averageRating">
+              <span class="stars">★</span>
+              {{ book.averageRating.toFixed(1) }}
+              <span class="ratings-count">({{ book.ratingsCount }} reseñas)</span>
+            </div>
+
+            <div class="user-rating">
+              <h3>Tu Calificación</h3>
+              <div class="star-rating">
+                <button 
+                  v-for="star in 5" 
+                  :key="star"
+                  @click="rateBook(star)"
+                  class="star-button"
+                  :class="{ active: star <= (userRating || 0) }"
+                  :title="`Calificar con ${star} ${star === 1 ? 'estrella' : 'estrellas'}`"
+                >
+                  ★
+                </button>
+              </div>
+              <p v-if="userRating" class="rating-text">
+                Calificaste este libro con {{ userRating }} {{ userRating === 1 ? 'estrella' : 'estrellas' }}
+              </p>
+            </div>
+          </div>
+          <div v-else-if="isInReadingList" class="rating-message">
+            <p>Para calificar este libro, primero debes marcarlo como "En Progreso" o "Leído" en tu lista de lectura.</p>
+          </div>
+          <div v-else class="rating-message">
+            <p>Para calificar este libro, primero debes agregarlo a tu lista de lectura y marcarlo como "En Progreso" o "Leído".</p>
           </div>
 
           <div class="book-actions">
@@ -133,8 +184,9 @@ const closeModal = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 1rem;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -145,6 +197,19 @@ const closeModal = () => {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .close-button {
@@ -211,21 +276,65 @@ const closeModal = () => {
   margin: 0;
 }
 
+.rating-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
 .book-rating {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.2rem;
-  color: #f1c40f;
+  margin-bottom: 1rem;
 }
 
 .stars {
-  font-size: 1.4rem;
+  color: #ffc107;
+  font-size: 1.2rem;
 }
 
 .ratings-count {
-  color: #666;
-  font-size: 1rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.user-rating {
+  margin-top: 1rem;
+}
+
+.user-rating h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.star-rating {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.star-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #dee2e6;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.star-button:hover,
+.star-button.active {
+  color: #ffc107;
+  transform: scale(1.1);
+}
+
+.rating-text {
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
 }
 
 .book-actions {
@@ -335,6 +444,17 @@ const closeModal = () => {
 .preview-link:hover,
 .info-link:hover {
   opacity: 0.9;
+}
+
+.rating-message {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid #e9ecef;
 }
 
 @media (max-width: 768px) {

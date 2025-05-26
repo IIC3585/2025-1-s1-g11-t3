@@ -5,7 +5,8 @@ export const useBookStore = defineStore('books', {
     favorites: [],
     readingList: [],
     sortBy: 'relevance', // 'relevance', 'date', 'rating'
-    sortOrder: 'desc' // 'asc', 'desc'
+    sortOrder: 'desc', // 'asc', 'desc'
+    userRatings: {} // Almacena las calificaciones de usuarios { bookId: rating }
   }),
 
   actions: {
@@ -54,16 +55,29 @@ export const useBookStore = defineStore('books', {
       this.sortOrder = order
     },
 
+    rateBook(bookId, rating) {
+      this.userRatings[bookId] = rating
+      localStorage.setItem('userRatings', JSON.stringify(this.userRatings))
+    },
+
+    getUserRating(bookId) {
+      return this.userRatings[bookId] || null
+    },
+
     // Load saved data from localStorage
     loadSavedData() {
       const savedFavorites = localStorage.getItem('favoriteBooks')
       const savedReadingList = localStorage.getItem('readingList')
+      const savedUserRatings = localStorage.getItem('userRatings')
       
       if (savedFavorites) {
         this.favorites = JSON.parse(savedFavorites)
       }
       if (savedReadingList) {
         this.readingList = JSON.parse(savedReadingList)
+      }
+      if (savedUserRatings) {
+        this.userRatings = JSON.parse(savedUserRatings)
       }
     }
   },
@@ -87,10 +101,10 @@ export const useBookStore = defineStore('books', {
         
         switch (state.sortBy) {
           case 'date':
-            comparison = new Date(b.volumeInfo.publishedDate || 0) - new Date(a.volumeInfo.publishedDate || 0)
+            comparison = new Date(b.publishedDate || 0) - new Date(a.publishedDate || 0)
             break
           case 'rating':
-            comparison = (b.volumeInfo.averageRating || 0) - (a.volumeInfo.averageRating || 0)
+            comparison = (b.averageRating || 0) - (a.averageRating || 0)
             break
           default: // 'relevance'
             return 0

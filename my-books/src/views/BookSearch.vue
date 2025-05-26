@@ -45,23 +45,7 @@ const searchBooks = async () => {
   
   try {
     const results = await bookService.searchBooks(searchQuery.value, filters.value)
-    searchResults.value = results.map(book => ({
-      id: book.id,
-      title: book.volumeInfo.title,
-      authors: book.volumeInfo.authors || ['Autor desconocido'],
-      description: book.volumeInfo.description || 'Sin descripción disponible',
-      coverUrl: bookService.getBookCoverUrl(book),
-      publishedDate: book.volumeInfo.publishedDate,
-      pageCount: book.volumeInfo.pageCount,
-      publisher: book.volumeInfo.publisher,
-      categories: book.volumeInfo.categories || [],
-      language: book.volumeInfo.language,
-      averageRating: book.volumeInfo.averageRating,
-      ratingsCount: book.volumeInfo.ratingsCount,
-      previewLink: book.volumeInfo.previewLink,
-      infoLink: book.volumeInfo.infoLink,
-      isbn: book.volumeInfo.industryIdentifiers?.[0]?.identifier || 'No disponible'
-    }))
+    searchResults.value = results
   } catch (err) {
     error.value = 'Error al buscar libros. Por favor, intenta de nuevo.'
     console.error(err)
@@ -221,7 +205,6 @@ onMounted(() => {
           <div class="book-details">
             <p v-if="book.publisher"><strong>Editorial:</strong> {{ book.publisher }}</p>
             <p v-if="book.publishedDate"><strong>Publicado:</strong> {{ book.publishedDate }}</p>
-            <p v-if="book.pageCount"><strong>Páginas:</strong> {{ book.pageCount }}</p>
           </div>
 
           <div class="book-categories" v-if="book.categories?.length">
@@ -324,49 +307,37 @@ onMounted(() => {
 
 .results-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
+  padding: 0.5rem;
 }
 
 @media (max-width: 480px) {
   .results-container {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-  }
-
-  .book-card {
-    font-size: 0.9rem;
+    gap: 0.75rem;
   }
 
   .book-cover {
-    height: 200px;
+    height: 140px;
   }
 
   .book-info {
     padding: 0.5rem;
   }
-
-  .book-info h4 {
-    font-size: 0.9rem;
-  }
-
-  .authors {
-    font-size: 0.8rem;
-  }
-
-  .rating {
-    font-size: 0.8rem;
-  }
 }
 
 .book-card {
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
   cursor: pointer;
   position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .book-card:hover {
@@ -374,11 +345,12 @@ onMounted(() => {
 }
 
 .book-cover {
-  height: 200px;
+  height: 160px;
   background: #f5f5f5;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .cover-image {
@@ -394,75 +366,99 @@ onMounted(() => {
 }
 
 .book-info {
-  padding: 1rem;
+  padding: 0.75rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: center;
+  align-items: center;
 }
 
 .book-info h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   color: #2c3e50;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
 }
 
 .authors {
   color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
 }
 
 .description {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #666;
-  margin-bottom: 1rem;
+  margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  width: 100%;
 }
 
-.book-meta {
-  display: flex;
-  justify-content: space-between;
+.book-details {
   font-size: 0.8rem;
-  color: #888;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.sort-container {
+.book-details p {
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  padding: 0 0.5rem;
+  word-wrap: break-word;
+}
+
+.book-details p strong {
+  display: inline-block;
+  margin-right: 0.25rem;
+}
+
+.book-categories {
   display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.25rem;
   flex-wrap: wrap;
+  margin-top: 0.25rem;
+  justify-content: center;
+  width: 100%;
 }
 
-@media (max-width: 480px) {
-  .sort-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .sort-container select {
-    width: 100%;
-  }
+.category-tag {
+  background-color: #e9ecef;
+  color: #666;
+  padding: 0.15rem 0.4rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
 }
 
-.sort-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.book-rating {
+  font-size: 0.8rem;
+  margin: 0.25rem 0;
+  width: 100%;
+  text-align: center;
 }
 
-.sort-group label {
-  color: #2c3e50;
-  font-weight: bold;
-}
-
-.sort-select {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
-  color: #2c3e50;
+.ratings-count {
+  font-size: 0.7rem;
+  color: #666;
 }
 
 .book-status {
@@ -496,14 +492,6 @@ onMounted(() => {
 }
 
 .category-more {
-  background-color: #e9ecef;
-  color: #666;
-  padding: 0.2rem 0.6rem;
-  border-radius: 15px;
-  font-size: 0.8rem;
-}
-
-.category-tag {
   background-color: #e9ecef;
   color: #666;
   padding: 0.2rem 0.6rem;
@@ -578,5 +566,44 @@ onMounted(() => {
 .clear-filters-button:hover,
 .apply-filters-button:hover {
   background-color: #3aa876;
+}
+
+.sort-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .sort-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .sort-container select {
+    width: 100%;
+  }
+}
+
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-group label {
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.sort-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #2c3e50;
 }
 </style> 

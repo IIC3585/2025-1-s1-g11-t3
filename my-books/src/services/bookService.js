@@ -1,10 +1,12 @@
 const API_BASE_URL = 'https://www.googleapis.com/books/v1/volumes'
+import { nyTimesService } from './nyTimesService'
 
 export const bookService = {
   // Search for books with filters
   async searchBooks(query, filters = {}) {
     try {
-      let searchQuery = query
+      // Si hay un query, lo buscamos específicamente en el título
+      let searchQuery = query ? `intitle:${query}` : ''
       
       // Add filters to the search query
       if (filters.author) {
@@ -23,11 +25,26 @@ export const bookService = {
         searchQuery += ` publishedDate:${filters.year}`
       }
 
+      console.log('Buscando libros con query:', searchQuery)
       const response = await fetch(`${API_BASE_URL}?q=${encodeURIComponent(searchQuery)}&maxResults=40`)
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`)
+      }
+      
       const data = await response.json()
-      return data.items || []
+      const results = this.formatBookResults(data.items || [])
+      
+      // Filtramos adicionalmente para asegurar que el título contenga la búsqueda
+      const filteredResults = query 
+        ? results.filter(book => 
+            book.title.toLowerCase().includes(query.toLowerCase())
+          )
+        : results
+
+      console.log('Resultados encontrados:', filteredResults.length)
+      return filteredResults
     } catch (error) {
-      console.error('Error searching books:', error)
+      console.error('Error al buscar libros:', error)
       return []
     }
   },
@@ -87,41 +104,151 @@ export const bookService = {
     ]
   },
 
-  // Get popular books (based on ratings and reviews)
+  // Get popular books (combined from Google Books and NYT)
   async getPopularBooks() {
     try {
-      const response = await fetch(`${API_BASE_URL}?q=subject:fiction&orderBy=rating&maxResults=8`)
-      const data = await response.json()
-      return this.formatBookResults(data.items || [])
+      console.log('Obteniendo libros populares...')
+      const [googleBooks, nytBooks] = await Promise.allSettled([
+        // Get popular books from Google Books
+        fetch(`${API_BASE_URL}?q=subject:fiction&orderBy=rating&maxResults=8`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
+            return res.json()
+          })
+          .then(data => this.formatBookResults(data.items || [])),
+        
+        // Get bestsellers from NYT
+        nyTimesService.getCurrentBestsellers()
+          .then(books => books.map(book => nyTimesService.formatBookData(book)))
+      ])
+
+      console.log('Resultados de Google Books:', googleBooks)
+      console.log('Resultados de NY Times:', nytBooks)
+
+      // Manejar resultados de Google Books
+      const googleResults = googleBooks.status === 'fulfilled' ? googleBooks.value : []
+      if (googleBooks.status === 'rejected') {
+        console.error('Error al obtener libros de Google:', googleBooks.reason)
+      }
+
+      // Manejar resultados de NY Times
+      const nytResults = nytBooks.status === 'fulfilled' ? nytBooks.value : []
+      if (nytBooks.status === 'rejected') {
+        console.error('Error al obtener libros de NY Times:', nytBooks.reason)
+      }
+
+      // Combine and deduplicate results based on ISBN
+      const combinedBooks = [...googleResults]
+      const existingIsbns = new Set(googleResults.map(book => book.isbn))
+
+      nytResults.forEach(book => {
+        if (book && !existingIsbns.has(book.isbn)) {
+          combinedBooks.push(book)
+          existingIsbns.add(book.isbn)
+        }
+      })
+
+      console.log('Libros combinados:', combinedBooks)
+      return combinedBooks.slice(0, 8) // Return top 8 books
     } catch (error) {
-      console.error('Error fetching popular books:', error)
+      console.error('Error al obtener libros populares:', error)
       return []
     }
   },
 
-  // Get bestsellers (based on sales and popularity)
+  // Get bestsellers (combined from Google Books and NYT)
   async getBestsellers() {
     try {
-      const response = await fetch(`${API_BASE_URL}?q=subject:fiction&orderBy=newest&maxResults=8`)
-      const data = await response.json()
-      return this.formatBookResults(data.items || [])
+      console.log('Obteniendo bestsellers...')
+      const [googleBooks, nytBooks] = await Promise.allSettled([
+        // Get bestsellers from Google Books
+        fetch(`${API_BASE_URL}?q=subject:fiction&orderBy=newest&maxResults=8`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
+            return res.json()
+          })
+          .then(data => this.formatBookResults(data.items || [])),
+        
+        // Get bestsellers from NYT
+        nyTimesService.getCurrentBestsellers('combined-print-and-e-book-fiction')
+          .then(books => books.map(book => nyTimesService.formatBookData(book)))
+      ])
+
+      // Manejar resultados de Google Books
+      const googleResults = googleBooks.status === 'fulfilled' ? googleBooks.value : []
+      if (googleBooks.status === 'rejected') {
+        console.error('Error al obtener bestsellers de Google:', googleBooks.reason)
+      }
+
+      // Manejar resultados de NY Times
+      const nytResults = nytBooks.status === 'fulfilled' ? nytBooks.value : []
+      if (nytBooks.status === 'rejected') {
+        console.error('Error al obtener bestsellers de NY Times:', nytBooks.reason)
+      }
+
+      // Combine and deduplicate results based on ISBN
+      const combinedBooks = [...googleResults]
+      const existingIsbns = new Set(googleResults.map(book => book.isbn))
+
+      nytResults.forEach(book => {
+        if (book && !existingIsbns.has(book.isbn)) {
+          combinedBooks.push(book)
+          existingIsbns.add(book.isbn)
+        }
+      })
+
+      return combinedBooks.slice(0, 8) // Return top 8 books
     } catch (error) {
-      console.error('Error fetching bestsellers:', error)
+      console.error('Error al obtener bestsellers:', error)
       return []
     }
   },
 
-  // Get trending books (based on recent publications and ratings)
+  // Get trending books (combined from Google Books and NYT)
   async getTrendingBooks() {
     try {
+      console.log('Obteniendo libros en tendencia...')
       const currentYear = new Date().getFullYear()
-      const response = await fetch(
-        `${API_BASE_URL}?q=publishedDate:${currentYear}&orderBy=rating&maxResults=8`
-      )
-      const data = await response.json()
-      return this.formatBookResults(data.items || [])
+      const [googleBooks, nytBooks] = await Promise.allSettled([
+        // Get trending books from Google Books
+        fetch(`${API_BASE_URL}?q=publishedDate:${currentYear}&orderBy=rating&maxResults=8`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Error HTTP: ${res.status}`)
+            return res.json()
+          })
+          .then(data => this.formatBookResults(data.items || [])),
+        
+        // Get bestsellers from NYT (these are current trending books)
+        nyTimesService.getCurrentBestsellers('combined-print-and-e-book-fiction')
+          .then(books => books.map(book => nyTimesService.formatBookData(book)))
+      ])
+
+      // Manejar resultados de Google Books
+      const googleResults = googleBooks.status === 'fulfilled' ? googleBooks.value : []
+      if (googleBooks.status === 'rejected') {
+        console.error('Error al obtener tendencias de Google:', googleBooks.reason)
+      }
+
+      // Manejar resultados de NY Times
+      const nytResults = nytBooks.status === 'fulfilled' ? nytBooks.value : []
+      if (nytBooks.status === 'rejected') {
+        console.error('Error al obtener tendencias de NY Times:', nytBooks.reason)
+      }
+
+      // Combine and deduplicate results based on ISBN
+      const combinedBooks = [...googleResults]
+      const existingIsbns = new Set(googleResults.map(book => book.isbn))
+
+      nytResults.forEach(book => {
+        if (book && !existingIsbns.has(book.isbn)) {
+          combinedBooks.push(book)
+          existingIsbns.add(book.isbn)
+        }
+      })
+
+      return combinedBooks.slice(0, 8) // Return top 8 books
     } catch (error) {
-      console.error('Error fetching trending books:', error)
+      console.error('Error al obtener libros en tendencia:', error)
       return []
     }
   },
