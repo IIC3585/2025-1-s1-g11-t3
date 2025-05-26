@@ -70,12 +70,39 @@ GOOGLE_BOOKS_API_KEY="your-google-books-api-key-here"
 - Sin API key, la búsqueda funcionará pero con límites más estrictos
 
 ### 4. Configurar base de datos
-```bash
-# Crear las tablas
-npm run db:push
 
-# Crear usuario demo (opcional)
-npm run create-demo-user
+#### Opción A: Docker Compose con inicialización automática (RECOMENDADO)
+```bash
+# Inicia PostgreSQL y automáticamente crea el usuario demo con libros de ejemplo
+docker-compose up
+
+# En otra terminal, una vez que veas "¡MyBooks está listo!"
+npm run dev
+```
+
+#### Opción B: Docker Compose solo PostgreSQL + setup manual
+```bash
+# Solo PostgreSQL (sin inicialización automática)
+docker-compose -f docker-compose.simple.yml up -d
+
+# Luego ejecutar setup manual
+npm run db:setup
+npm run seed
+```
+
+#### Opción C: Setup completo manual (sin Docker)
+```bash
+# Configuración inicial completa (crea tablas + usuario demo)
+npm run db:setup
+
+# Agregar libros de ejemplo (opcional pero recomendado)
+npm run seed
+```
+
+#### Opción D: Reset completo (para desarrollo)
+```bash
+# Reset completo: elimina todo y recrea con datos de ejemplo
+npm run db:reset
 ```
 
 ### 5. Ejecutar en desarrollo

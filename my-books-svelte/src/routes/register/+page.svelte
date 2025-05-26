@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import type { ActionData } from './$types';
@@ -53,7 +54,10 @@
 				return async ({ result }) => {
 					loading = false;
 					if (result.type === 'redirect') {
-						goto(result.location);
+						// Invalidar todos los datos para forzar recarga del layout
+						await invalidateAll();
+						// Usar window.location.href para forzar recarga completa y actualizar navbar
+						window.location.href = result.location;
 					}
 				};
 			}}

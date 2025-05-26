@@ -34,14 +34,37 @@
 		return $page.url.pathname.startsWith(href);
 	}
 
+	let isLoggingOut = false;
+
 	async function handleLogout() {
+		if (isLoggingOut) return; // Prevenir múltiples clics
+		
+		isLoggingOut = true;
+		
 		try {
-			const response = await fetch('/logout', { method: 'POST' });
+			const response = await fetch('/logout', { 
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			
 			if (response.ok) {
-				goto('/');
+				const result = await response.json();
+				console.log('Logout successful:', result.message);
+				
+				// Forzar recarga completa de la página para limpiar el estado
+				window.location.href = '/';
+			} else {
+				const error = await response.json();
+				console.error('Logout failed:', error.error);
+				alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
 			}
 		} catch (error) {
 			console.error('Logout error:', error);
+			alert('Error de conexión. Por favor, intenta de nuevo.');
+		} finally {
+			isLoggingOut = false;
 		}
 	}
 </script>
@@ -84,9 +107,20 @@
 							<span class="text-sm text-gray-700">Hola, {user.username}</span>
 							<button
 								on:click={handleLogout}
-								class="text-gray-600 hover:text-gray-900 text-sm font-medium"
+								disabled={isLoggingOut}
+								class="text-gray-600 hover:text-gray-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200"
 							>
-								Cerrar Sesión
+								{#if isLoggingOut}
+									<span class="flex items-center space-x-1">
+										<svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+										<span>Cerrando...</span>
+									</span>
+								{:else}
+									Cerrar Sesión
+								{/if}
 							</button>
 						</div>
 					{:else}
@@ -141,10 +175,19 @@
 				{#if user}
 					<button
 						on:click={handleLogout}
-						class="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 w-full text-left"
+						disabled={isLoggingOut}
+						class="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed transition-opacity duration-200"
 					>
-						<span>🚪</span>
-						<span>Cerrar Sesión</span>
+						{#if isLoggingOut}
+							<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Cerrando sesión...</span>
+						{:else}
+							<span>🚪</span>
+							<span>Cerrar Sesión</span>
+						{/if}
 					</button>
 				{/if}
 			</div>

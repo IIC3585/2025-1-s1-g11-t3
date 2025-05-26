@@ -1,8 +1,9 @@
 import { hash } from '@node-rs/argon2';
 import { generateIdFromEntropySize } from 'lucia';
-import { db } from '../src/lib/server/db/index';
-import { user } from '../src/lib/server/db/schema';
+import { db, schema } from './db-connection';
 import { eq } from 'drizzle-orm';
+
+const { user } = schema;
 
 async function createDemoUser() {
 	try {

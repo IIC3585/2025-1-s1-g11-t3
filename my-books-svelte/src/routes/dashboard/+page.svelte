@@ -155,23 +155,7 @@
 	{/if}
 
 	<!-- Quick Actions -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-		<!-- Add Book -->
-		<a
-			href="/books/add"
-			class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 group"
-		>
-			<div class="flex items-center space-x-4">
-				<div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-					<span class="text-2xl">➕</span>
-				</div>
-				<div>
-					<h3 class="font-semibold text-gray-900">Agregar Libro</h3>
-					<p class="text-sm text-gray-600">Añade un nuevo libro a tu biblioteca</p>
-				</div>
-			</div>
-		</a>
-
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 		<!-- Search Books -->
 		<a
 			href="/search"
@@ -214,12 +198,12 @@
 			</p>
 			<div class="space-y-2 text-sm text-blue-700">
 				<div class="flex items-center space-x-2">
-					<span>📖</span>
-					<span>Agrega tu libro favorito de todos los tiempos</span>
+					<span>🔍</span>
+					<span>Busca tu libro favorito de todos los tiempos</span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<span>🔍</span>
-					<span>Busca ese libro que siempre quisiste leer</span>
+					<span>📖</span>
+					<span>Encuentra ese libro que siempre quisiste leer</span>
 				</div>
 				<div class="flex items-center space-x-2">
 					<span>⭐</span>
@@ -229,6 +213,14 @@
 					<span>📝</span>
 					<span>Escribe notas sobre tus lecturas</span>
 				</div>
+			</div>
+			<div class="mt-4">
+				<a 
+					href="/search" 
+					class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+				>
+					🔍 Buscar libros
+				</a>
 			</div>
 		</div>
 	{/if}
